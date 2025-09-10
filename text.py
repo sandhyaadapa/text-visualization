@@ -1,19 +1,28 @@
 import streamlit as st
-from PyPDF2 import PdfReader
+from pptx import Presentation
+from io import BytesIO
 
-st.title("📄 PDF Uploader")
+st.title("📊 PowerPoint (.pptx) Uploader")
 
-# Upload PDF file
-uploaded_file = st.file_uploader("Drag and drop a PDF file here", type="pdf")
+uploaded_pptx = st.file_uploader("Upload a PowerPoint file", type=["pptx"])
 
-if uploaded_file is not None:
-    # Read PDF using PyPDF2
-    reader = PdfReader(uploaded_file)
-    num_pages = len(reader.pages)
-    st.success(f"Uploaded: `{uploaded_file.name}` with **{num_pages} pages**")
+if uploaded_pptx is not None:
+    st.success(f"Uploaded: `{uploaded_pptx.name}`")
 
-    # Display content of first few pages
-    for i in range(min(3, num_pages)):
-        text = reader.pages[i].extract_text()
-        st.subheader(f"Page {i+1}")
-        st.text(text if text else "[No text extracted from this page]")
+    # Load presentation
+    presentation = Presentation(uploaded_pptx)
+
+    st.write(f"Total slides: {len(presentation.slides)}")
+
+    for i, slide in enumerate(presentation.slides):
+        st.header(f"Slide {i + 1}")
+
+        slide_text = ""
+        for shape in slide.shapes:
+            if hasattr(shape, "text"):
+                slide_text += shape.text + "\n"
+
+        if slide_text.strip():
+            st.text(slide_text.strip())
+        else:
+            st.info("No text found on this slide.")

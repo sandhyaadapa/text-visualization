@@ -1,42 +1,19 @@
 import streamlit as st
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.express as px
-import pandas as pd
+from PyPDF2 import PdfReader
 
-# Load sample data
-df = sns.load_dataset('iris')
+st.title("📄 PDF Uploader")
 
-# Page title
-st.title("📊 Three Visualizations in One Streamlit App")
+# Upload PDF file
+uploaded_file = st.file_uploader("Drag and drop a PDF file here", type="pdf")
 
-# --- 1. Matplotlib Scatter Plot ---
-st.header("1. Matplotlib: Sepal Length vs Sepal Width")
-fig1, ax1 = plt.subplots()
-species = df['species'].unique()
-colors = ['red', 'green', 'blue']
+if uploaded_file is not None:
+    # Read PDF using PyPDF2
+    reader = PdfReader(uploaded_file)
+    num_pages = len(reader.pages)
+    st.success(f"Uploaded: `{uploaded_file.name}` with **{num_pages} pages**")
 
-for sp, color in zip(species, colors):
-    subset = df[df['species'] == sp]
-    ax1.scatter(subset['sepal_length'], subset['sepal_width'], label=sp, color=color)
-
-ax1.set_xlabel("Sepal Length")
-ax1.set_ylabel("Sepal Width")
-ax1.legend()
-st.pyplot(fig1)
-
-# --- 2. Seaborn Boxplot ---
-st.header("2. Seaborn: Petal Length Distribution by Species")
-fig2, ax2 = plt.subplots()
-sns.boxplot(data=df, x='species', y='petal_length', ax=ax2, palette="pastel")
-st.pyplot(fig2)
-
-# --- 3. Plotly Bar Chart ---
-st.header("3. Plotly: Average Petal Width by Species")
-avg_petal_width = df.groupby("species")["petal_width"].mean().reset_index()
-fig3 = px.bar(avg_petal_width, x="species", y="petal_width",
-              labels={"petal_width": "Average Petal Width"},
-              color="species",
-              title="Average Petal Width by Species")
-st.plotly_chart(fig3)
-
+    # Display content of first few pages
+    for i in range(min(3, num_pages)):
+        text = reader.pages[i].extract_text()
+        st.subheader(f"Page {i+1}")
+        st.text(text if text else "[No text extracted from this page]")

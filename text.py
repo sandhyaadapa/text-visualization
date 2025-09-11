@@ -1,28 +1,39 @@
 import streamlit as st
 from pptx import Presentation
-from io import BytesIO
+from pptx.util import Inches
+import io
 
-st.title("📊 PowerPoint (.pptx) Uploader")
+st.title("📊 PowerPoint Generator")
 
-uploaded_pptx = st.file_uploader("Upload a PowerPoint file", type=["pptx"])
+st.write("Enter your slide content below:")
 
-if uploaded_pptx is not None:
-    st.success(f"Uploaded: `{uploaded_pptx.name}`")
+# Input form
+with st.form("ppt_form"):
+    slide_title = st.text_input("Slide Title", "My Presentation Slide")
+    bullet_points = st.text_area("Bullet Points (one per line)", "First point\nSecond point\nThird point")
+    submit = st.form_submit_button("Generate PPT")
 
-    # Load presentation
-    presentation = Presentation(uploaded_pptx)
+if submit:
+    prs = Presentation()
+    slide_layout = prs.slide_layouts[1]  # Title and Content layout
+    slide = prs.slides.add_slide(slide_layout)
 
-    st.write(f"Total slides: {len(presentation.slides)}")
+    title = slide.shapes.title
+    content = slide.placeholders[1]
 
-    for i, slide in enumerate(presentation.slides):
-        st.header(f"Slide {i + 1}")
+    title.text = slide_title
+    for line in bullet_points.strip().split("\n"):
+        content.text += f"\n• {line.strip()}"
 
-        slide_text = ""
-        for shape in slide.shapes:
-            if hasattr(shape, "text"):
-                slide_text += shape.text + "\n"
+    # Save to BytesIO
+    pptx_io = io.BytesIO()
+    prs.save(pptx_io)
+    pptx_io.seek(0)
 
-        if slide_text.strip():
-            st.text(slide_text.strip())
-        else:
-            st.info("No text found on this slide.")
+    st.success("✅ PowerPoint file generated!")
+    st.download_button(
+        label="📥 Download PPTX",
+        data=pptx_io,
+        file_name="generated_presentation.pptx",
+        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    )

@@ -1,39 +1,37 @@
+# streamlit_app.py
+
 import streamlit as st
-from pptx import Presentation
-from pptx.util import Inches
-import io
+import pandas as pd
+import matplotlib.pyplot as plt
 
-st.title("📊 PowerPoint Generator")
+st.set_page_config(page_title="CSV Analyzer", layout="wide")
 
-st.write("Enter your slide content below:")
+st.title("📊 CSV Data Analyzer")
 
-# Input form
-with st.form("ppt_form"):
-    slide_title = st.text_input("Slide Title", "My Presentation Slide")
-    bullet_points = st.text_area("Bullet Points (one per line)", "First point\nSecond point\nThird point")
-    submit = st.form_submit_button("Generate PPT")
+# Upload CSV
+uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
 
-if submit:
-    prs = Presentation()
-    slide_layout = prs.slide_layouts[1]  # Title and Content layout
-    slide = prs.slides.add_slide(slide_layout)
+if uploaded_file is not None:
+    # Read the CSV
+    df = pd.read_csv(uploaded_file)
+    st.success("File uploaded successfully!")
+    
+    # Show data
+    st.subheader("Data Preview")
+    st.dataframe(df)
 
-    title = slide.shapes.title
-    content = slide.placeholders[1]
+    # Show basic statistics
+    st.subheader("Descriptive Statistics")
+    st.write(df.describe())
 
-    title.text = slide_title
-    for line in bullet_points.strip().split("\n"):
-        content.text += f"\n• {line.strip()}"
+    # Column selection for plotting
+    st.subheader("📈 Plot a Column")
+    column_to_plot = st.selectbox("Select numeric column to plot", df.select_dtypes(include='number').columns)
 
-    # Save to BytesIO
-    pptx_io = io.BytesIO()
-    prs.save(pptx_io)
-    pptx_io.seek(0)
-
-    st.success("✅ PowerPoint file generated!")
-    st.download_button(
-        label="📥 Download PPTX",
-        data=pptx_io,
-        file_name="generated_presentation.pptx",
-        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    )
+    if column_to_plot:
+        fig, ax = plt.subplots()
+        df[column_to_plot].plot(kind='hist', ax=ax, bins=20, color='skyblue')
+        ax.set_title(f'Distribution of {column_to_plot}')
+        st.pyplot(fig)
+else:
+    st.info("👈 Upload a CSV file to get started.")
